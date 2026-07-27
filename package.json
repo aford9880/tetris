@@ -1,0 +1,8 @@
+{
+  "name": "tetris-rpg-time-war",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build:yandex": "powershell -ExecutionPolicy Bypass -File scripts/build-yandex.ps1"
+  }
+}

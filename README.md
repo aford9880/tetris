@@ -1,19 +1,32 @@
 # Tetris RPG: Time War
 
-Небольшой браузерный Tetris с RPG-механиками: боссы, мана, способности,
-перемотка времени, AI-режим, достижения и лидерборд.
+Браузерный Tetris с RPG-механиками: боссы, мана, навыки, перемотка времени,
+AI-режим, бонусы, перегрузка (overload), контракты, достижения, облачные
+сохранения и лидерборд Яндекс Игр.
+
+Игра не требует сборщика и зависимостей — всё в одном `index.html`.
 
 ## Возможности
 
 - 7 классических тетромино, ghost piece, next piece и bag randomizer.
-- Боссы с HP, таймером и атаками мусором.
-- Навыки: Rewind, Bomb, Clear и Slow.
-- Переключатель AI и скорость 1–10.
-- RU/EN локализация с автоопределением языка через Yandex Games SDK.
-- Достижения сохраняются локально и через `player.setData`.
-- Рекорд отправляется в лидерборд `high_score`.
-- Rewarded video за дополнительную ману и interstitial после явного перезапуска.
-- Адаптивная вёрстка и управление свайпами/кнопками на мобильных.
+- **Система уровней и XP** — рост сложности, увеличение скорости.
+- **Мана (MP)** — ресурс для навыков. Пополняется за очистку линий, level up,
+  победу над боссом, бонусы и рекламу.
+- **4 активных навыка:** Rewind (Z), Bomb (X), Clear (C), Slow (V).
+- **Боссы** — 5 видов с HP, таймером и мусорными атаками.
+- **Перемотка времени** — откат поля на ~15 шагов (60 MP).
+- **Бонусы** — 6 эффектов: молния, заморозка, щит, мана, перегрузка,
+  предвидение. Выдаются за серию из 4 очисток.
+- **Контракты** — временные задания при появлении босса.
+- **Шкала перегрузки (Overload)** — при ≥70% даёт ×1.5 очков за линии.
+- **AI-режим** — компьютер играет сам (клавиша A).
+- **Ползунок скорости 1–16** (клавиши `-` / `+`).
+- **RU/EN локализация** с автоопределением языка.
+- **6 достижений** — сохраняются локально и в облаке.
+- **Лидерборд** `high_score` через Yandex Games SDK.
+- **Облачные сохранения** профиля через `player.setData`.
+- **Монетизация:** rewarded video (бонус-реролл) и interstitial (при рестарте).
+- **Адаптивная вёрстка** и управление свайпами/кнопками на мобильных.
 
 ## Управление
 
@@ -23,19 +36,19 @@
 | Мягкое падение | `↓` |
 | Поворот | `↑` |
 | Жёсткое падение | `Space` |
-| Перемотка | `Z` |
-| Бомба | `X` |
-| Очистка ряда | `C` |
-| Замедление | `V` |
-| AI | `A` или кнопка `AI ON/OFF` |
+| Перемотка (Rewind) | `Z` |
+| Бомба (Bomb) | `X` |
+| Очистка ряда (Clear) | `C` |
+| Замедление (Slow) | `V` |
+| AI вкл/выкл | `A` или кнопка в панели |
 | Скорость | Ползунок или `-` / `+` |
 | Пауза | `P` / `Esc` |
-| Достижения | Кнопка `🏆` |
+
+На мобильных: касание — поворот, свайпы — движение; кнопки `←` `↻` `↓` `→` `⤓`.
 
 ## Локальный запуск
 
-Игра не требует сборщика и зависимостей. Откройте `index.html` напрямую или
-запустите любой статический сервер:
+Откройте `index.html` напрямую или запустите статический сервер:
 
 ```powershell
 python -m http.server 8080
@@ -49,8 +62,8 @@ python -m http.server 8080
 .\scripts\build-yandex.ps1
 ```
 
-Скрипт создаёт `dist/tetris-rpg-time-war.zip`. В корне архива находится
-`index.html`, как требует форма загрузки Яндекс Игр.
+Скрипт создаёт `dist/tetris-rpg-time-war.zip`. В корне архива — только
+`index.html`, как требует форма загрузки.
 
 Перед отправкой в модерацию:
 
@@ -62,19 +75,14 @@ python -m http.server 8080
    и скриншоты из `assets/yandex/screenshots`.
 6. Проверьте `Game Ready`, паузу рекламы и rewarded-награду в debug-панели.
 
-Текущие требования и поля черновика:
-
-- [Требования к игре](https://yandex.ru/dev/games/doc/ru/concepts/requirements)
-- [Подключение SDK](https://yandex.ru/dev/games/doc/ru/sdk/sdk-about)
-- [Реклама](https://yandex.ru/dev/games/doc/ru/sdk/sdk-adv)
-- [Загрузка игры и разметка геймплея](https://yandex.ru/dev/games/doc/ru/sdk/sdk-game-events)
-- [Заполнение черновика](https://yandex.ru/dev/games/doc/ru/console/add-new-game/draft)
+Подробнее — в [`yandex-publishing.md`](yandex-publishing.md).
 
 ## English
 
-Tetris RPG: Time War is a compact browser Tetris with bosses, mana skills,
-rewind, AI mode, achievements, cloud saves and a Yandex Games leaderboard.
-The game automatically selects Russian or English and includes a manual toggle.
+Tetris RPG: Time War is a compact browser Tetris with RPG mechanics — bosses,
+mana skills, time rewind, AI mode, 6 power-ups, overload, contracts,
+achievements, cloud saves and a Yandex Games leaderboard. The game auto-detects
+Russian or English with a manual toggle.
 
-The game is intentionally dependency-free: `index.html` is the complete runtime
-and the Yandex archive can be built with `scripts/build-yandex.ps1`.
+The game is intentionally dependency-free: `index.html` is the complete runtime.
+Build the Yandex archive with `scripts/build-yandex.ps1`.

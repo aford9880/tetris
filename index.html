@@ -22,7 +22,8 @@ body{
   cursor:pointer;box-shadow:inset 0 1px #ffffff12
 }
 .ui-btn:hover{background:#1c2855}.ui-btn:active{transform:translateY(1px)}
-.reward-btn{border-color:#775d22;color:#ffe47e}
+.reward-btn{border-color:#775d22;color:#ffe47e;display:none}
+#achBtn{display:none}
 canvas{
   display:block;width:min(100%,calc((100vh - 76px)*.779));height:auto;
   border:1px solid #2a3a6a;border-radius:8px;box-shadow:0 18px 60px #0009;
@@ -55,6 +56,12 @@ canvas{
 .achievement.unlocked{border-color:#8b752b;background:#211d19;color:#ffe184}
 .achievement b{display:block;margin-bottom:3px;font-size:12px}
 .achievement span{font-size:10px}
+.bonus-modal{position:fixed;inset:0;z-index:12;display:none;place-items:center;padding:16px;background:#02040dcc;backdrop-filter:blur(5px)}
+.bonus-modal.open{display:grid}.bonus-card{width:min(520px,100%);padding:18px;border:1px solid #4a5fa2;border-radius:12px;background:#0c112b;box-shadow:0 24px 80px #000c}
+.bonus-card h2{font-size:18px;margin-bottom:4px}.bonus-card p{font-size:11px;color:#9eadd7;margin-bottom:12px}.bonus-guide{display:none;padding:8px 10px;margin:-3px 0 10px;border:1px solid #66552a;border-radius:7px;background:#211d19;color:#ffe184;font-size:11px;line-height:1.35}.bonus-guide.show{display:block}
+.bonus-options{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.bonus-option{min-height:118px;text-align:left;padding:10px;border:1px solid #344477;border-radius:9px;background:#111735;color:#dce6ff;cursor:pointer}
+.bonus-option:hover{background:#1c2855;border-color:#79a9ff}.bonus-option b{display:block;color:#ffe47e;font-size:12px;margin-bottom:8px}.bonus-option span{display:block;color:#b8c5e8;font-size:10px;line-height:1.35}.bonus-reroll{margin-top:10px;width:100%}
+@media (max-width:640px){.bonus-options{grid-template-columns:1fr}.bonus-option{min-height:74px}}
 @media (pointer:coarse),(max-width:640px){
   body{align-items:flex-start;overflow:auto;padding:8px}
   .game{gap:8px}
@@ -71,8 +78,6 @@ canvas{
   <header class="toolbar">
     <strong id="gameTitle">Tetris RPG: Time War</strong>
     <div class="toolbar-actions">
-      <button class="ui-btn reward-btn" id="rewardBtn" type="button">🎬 +40 MP</button>
-      <button class="ui-btn" id="achBtn" type="button" aria-label="Достижения">🏆</button>
       <button class="ui-btn" id="langBtn" type="button" aria-label="English">EN</button>
     </div>
   </header>
@@ -86,7 +91,16 @@ canvas{
   </div>
   <p class="hint">Касание поля — поворот · свайп — движение</p>
 </main>
-<section class="modal" id="achModal" role="dialog" aria-modal="true" aria-labelledby="achTitle">
+<section class="bonus-modal" id="bonusModal" role="dialog" aria-modal="true" aria-labelledby="bonusTitle" hidden>
+  <div class="bonus-card">
+    <h2 id="bonusTitle">Выбери бонус</h2>
+    <p id="bonusSubtitle">Один эффект на выбор. Он поможет в этом забеге.</p>
+    <div class="bonus-guide" id="bonusGuide"></div>
+    <div class="bonus-options" id="bonusOptions"></div>
+    <button class="ui-btn bonus-reroll" id="bonusReroll" type="button">🎬 Посмотреть рекламу — ещё один вариант</button>
+  </div>
+</section>
+<section class="modal" id="achModal" role="dialog" aria-modal="true" aria-labelledby="achTitle" hidden>
   <div class="modal-card">
     <div class="modal-head">
       <h2 id="achTitle">Достижения</h2>
@@ -109,7 +123,7 @@ c.width=W; c.height=H;
 const I18N={
   ru:{
     title:'Tetris RPG: Time War',next:'СЛЕДУЮЩАЯ',score:'СЧЁТ',level:'УРОВЕНЬ',
-    lines:'линий',mana:'МАНА',speed:'СКОРОСТЬ',paused:'ПАУЗА',
+    lines:'линий',mana:'МАНА',speed:'СКОРОСТЬ',turbo:'ТУРБО',overload:'ПЕРЕГРУЗКА',paused:'ПАУЗА',
     resume:'P — продолжить',gameOver:'ИГРА ОКОНЧЕНА',restart:'ENTER или касание — заново',
     controls1:'Z:Перемотка X:Бомба',controls2:'C:Очистка V:Замедление',
     controls3:'← → ↓ ↑  Пробел  A:AI',hint:'Касание — поворот · свайп — движение',
@@ -117,6 +131,8 @@ const I18N={
     rewardDone:'+40 МАНЫ',boss:'БОСС',bossDefeated:'БОСС ПОБЕЖДЁН!',
     bossRetreated:'БОСС ОТСТУПИЛ',levelUp:'НОВЫЙ УРОВЕНЬ!',unlocked:'ДОСТИЖЕНИЕ',
     rewind:'ПЕРЕМОТКА',bomb:'БОМБА',clear:'ОЧИСТКА',slow:'ЗАМЕДЛЕНИЕ',
+    bonusTitle:'Выбери бонус',bonusSubtitle:'Один эффект на выбор. Он поможет в этом забеге.',bonusReroll:'Ещё один вариант',
+    bonusSeries:'Серия',contract:'Контракт',choose:'Выбрать',contractClear:'Очистить {n} линии за {t} сек.',
     bosses:{dragon:'Повелитель драконов',void:'Титан пустоты',chaos:'Демон хаоса',wyrm:'Древний змей',shadow:'Король теней'},
     ach:{
       first_line:['Первый шаг','Очистить первую линию.'],
@@ -129,7 +145,7 @@ const I18N={
   },
   en:{
     title:'Tetris RPG: Time War',next:'NEXT',score:'SCORE',level:'LEVEL',
-    lines:'lines',mana:'MANA',speed:'SPEED',paused:'PAUSED',
+    lines:'lines',mana:'MANA',speed:'SPEED',turbo:'TURBO',overload:'OVERLOAD',paused:'PAUSED',
     resume:'P — resume',gameOver:'GAME OVER',restart:'ENTER or tap to restart',
     controls1:'Z:Rewind  X:Bomb',controls2:'C:Clear   V:Slow',
     controls3:'← → ↓ ↑  Space  A:AI',hint:'Tap to rotate · swipe to move',
@@ -137,6 +153,8 @@ const I18N={
     rewardDone:'+40 MANA',boss:'BOSS',bossDefeated:'BOSS DEFEATED!',
     bossRetreated:'BOSS RETREATED',levelUp:'LEVEL UP!',unlocked:'ACHIEVEMENT',
     rewind:'REWIND',bomb:'BOMB',clear:'CLEAR',slow:'SLOW',
+     bonusTitle:'Choose a bonus',bonusSubtitle:'Pick one effect for this run.',bonusGuide:'Pick a card: its description tells you when it triggers. Bonuses are especially useful against the boss.',bonusReroll:'Reveal one more option',
+    bonusSeries:'STREAK',contract:'CONTRACT',choose:'Choose',contractClear:'Clear {n} lines in {t}s',
     bosses:{dragon:'Dragon Lord',void:'Void Titan',chaos:'Chaos Demon',wyrm:'Elder Wyrm',shadow:'Shadow King'},
     ach:{
       first_line:['First Step','Clear your first line.'],
@@ -161,10 +179,14 @@ function setLanguage(lang,save=true){
   document.documentElement.lang=currentLang;
   document.title=tr('title');
   document.getElementById('gameTitle').textContent=tr('title');
-  document.getElementById('rewardBtn').textContent='🎬 '+tr('reward');
-  document.getElementById('achBtn').setAttribute('aria-label',tr('achievements'));
-  document.getElementById('achTitle').textContent=tr('achievements');
-  document.getElementById('achClose').setAttribute('aria-label',tr('close'));
+  const rewardBtn=document.getElementById('rewardBtn');
+  if(rewardBtn)rewardBtn.textContent='✦ '+tr('bonusTitle');
+  const achBtn=document.getElementById('achBtn');
+  if(achBtn)achBtn.setAttribute('aria-label',tr('achievements'));
+  const achTitle=document.getElementById('achTitle');
+  if(achTitle)achTitle.textContent=tr('achievements');
+  const achClose=document.getElementById('achClose');
+  if(achClose)achClose.setAttribute('aria-label',tr('close'));
   document.getElementById('langBtn').textContent=currentLang==='ru'?'EN':'RU';
   document.getElementById('langBtn').setAttribute('aria-label',currentLang==='ru'?'English':'Русский');
   document.querySelector('.hint').textContent=tr('hint');
@@ -293,6 +315,14 @@ const BOSSES=[
   {key:'chaos',color:'#b84dff'},{key:'wyrm',color:'#00ff6a'},
   {key:'shadow',color:'#4488ff'}
 ];
+const BONUS_DEFS=[
+  {id:'lightning',icon:'⚡',ru:['УДАР МОЛНИИ','Следующая очистка наносит боссу ×2 урона'],en:['LIGHTNING STRIKE','Your next clear deals ×2 boss damage']},
+  {id:'freeze',icon:'❄',ru:['ЗАМОРОЗКА','Замедлить падение на 8 секунд'],en:['FREEZE','Slow falling for 8 seconds']},
+  {id:'shield',icon:'🛡',ru:['ЩИТ','Следующая атака босса не добавит мусор'],en:['SHIELD','The next boss attack adds no garbage']},
+  {id:'mana',icon:'✦',ru:['ИСТОЧНИК МАНЫ','Мгновенно получить 35 маны'],en:['MANA SPRING','Instantly gain 35 mana']},
+  {id:'wild',icon:'✹',ru:['ПЕРЕГРУЗКА','Следующие 2 очистки дают +50% очков'],en:['OVERLOAD','Your next 2 clears score +50%']},
+  {id:'preview',icon:'◈',ru:['ПРЕДВИДЕНИЕ','Показать следующие 3 фигуры'],en:['FORESIGHT','Reveal the next 3 pieces']}
+];
 const SHAPES={
   I:[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
   O:[[1,1],[1,1]],
@@ -318,10 +348,10 @@ let G={
     this.score=0;this.level=1;this.xp=0;this.xpN=100;
     this.mana=60;this.maxMana=100;
     this.lines=0;this.linesB=0;this.bossThr=10;
-    this.sliderV=5;
+    this.sliderV=5;this.overload=0;
     this.baseMs=1600-this.sliderV*150;this.dropMs=this.baseMs;
     this.state='play';
-    this.next=this.pop();
+    this.nextQ=[this.pop(),this.pop(),this.pop()];this.next=this.nextQ[0];
     this.pc=null;this.gh=0;
     this.boss=null;
     this.slow=0;
@@ -333,6 +363,8 @@ let G={
     this.animClr=null;
     this.das={l:{h:0,t:0,a:0},r:{h:0,t:0,a:0},d:{h:0,t:0,a:0}};
     this.aiOn=0;this.aiTarget=null;this.aiTimer=0;
+    this.streak=0;this.streakGoal=4;this.bonusOffer=null;this.activeBonus=null;
+    this.contract=null;this.contractLines=0;this.preview=0;
     this.sldDrag=0;
     this.spawn();
   },
@@ -342,9 +374,9 @@ let G={
   },
   spawn(){
     if(this.pc)return;
-    const t=this.next;
+    const t=this.nextQ.shift();
     this.pc={t,x:3,y:t==='I'?-1:0,r:0,s:shape(t,0)};
-    this.gh=this.gy();this.next=this.pop();
+    this.nextQ.push(this.pop());this.next=this.nextQ[0];if(this.preview>0)this.preview--;this.gh=this.gy();
     if(!this.ok(this.pc.s,this.pc.x,this.pc.y))this.endGame();
   },
   ok(s,px,py){
@@ -407,7 +439,7 @@ let G={
   },
   clr(){
     const rows=[];for(let r=ROWS;r--;)if(this.board[r].every(c=>c))rows.push(r);
-    if(!rows.length)return;
+    if(!rows.length){this.streak=0;this.overload=Math.max(0,this.overload-1.5);return;}
     const parts=[];
     for(const r of rows)for(let c=COLS;c--;){
       const t=this.board[r][c];
@@ -424,20 +456,23 @@ let G={
     for(const r of rows)this.board.splice(r,1);
     for(let i=rows.length;i--;)this.board.unshift(Array(COLS).fill(0));
     const n=rows.length;
-    const gained=([0,100,300,500,800][n]||800)*this.level;
+    const boosted=this.overload>=70;
+    const gained=Math.floor(([0,100,300,500,800][n]||800)*this.level*(boosted?1.5:1));
     this.xp+=[0,10,25,50,100][n]||100;this.score+=gained;
-    this.lines+=n;this.linesB+=n;
+    this.lines+=n;this.linesB+=n;this.streak++;
+    this.overload=Math.min(100,this.overload+n*18+(n>=2?12:0));
+    if(this.contract){this.contractLines+=n;if(this.contractLines>=this.contract.need){this.activeBonus={id:'shield',uses:1};this.contract=null;this.fAdd(BX+BW/2,BY+BH/2,'CONTRACT COMPLETE','#ffe066',65);}}
     profile.totalLines+=n;persistProfile();checkAchievements();
-    this.mana=Math.min(this.maxMana,this.mana+([0,10,20,40,80][n]||80));
     this.fAdd(BX+BW/2,BY+BH/2,'+'+gained,'#fff',50);
+    if(boosted)this.fAdd(BX+BW/2,BY+BH/2,tr('overload'),'#ff9b66',55);
     while(this.xp>=this.xpN)this.lvlUp();
-    if(this.boss){this.bossDmg(n);}else if(this.linesB>=this.bossThr)this.bossSpawn();
+    if(this.overload>=100)this.overload=35;
   },
   lvlUp(){
     this.level++;this.xp-=this.xpN;
     this.xpN=Math.floor(100*Math.pow(1.15,this.level-1));
     this.maxMana+=20;this.mana=Math.min(this.maxMana,this.mana+30);
-    this.dropMs=Math.max(80,this.baseMs-(this.level-1)*40);
+    this.dropMs=Math.max(35,this.baseMs-(this.level-1)*40);
     this.fAdd(PX+20,BY+120,tr('levelUp'),'#0f8',80);this.fAdd(BX+BW/2,BY+BH/2,tr('levelUp'),'#0f8',80);
     checkAchievements();
   },
@@ -445,11 +480,15 @@ let G={
     const i=Math.min((this.level/3)|0,BOSSES.length-1);
     const hp=12+this.level*3;
     this.boss={key:BOSSES[i].key,color:BOSSES[i].color,hp,maxHp:hp,timer:45,gT:2+Math.random()};
+    this.contract={need:3,time:20};this.contractLines=0;
     this.fAdd(W/2,BY-10,tr('boss')+': '+tr('bosses.'+this.boss.key),this.boss.color,90);this.linesB=0;
   },
   bossDmg(n){
     if(!this.boss)return;
-    this.boss.hp-=[0,1,2,4,7][n]||7;
+    const lightning=this.activeBonus?.id==='lightning'&&this.activeBonus.uses>0;
+    const damage=([0,1,2,4,7][n]||7)*(lightning?2:1);
+    this.boss.hp-=damage;
+    if(lightning){this.activeBonus.uses--;if(!this.activeBonus.uses)this.activeBonus=null;}
     if(this.boss.hp<=0){
       this.xp+=80+this.level*10;this.mana=Math.min(this.maxMana,this.mana+50);
       this.score+=500*this.level;
@@ -461,6 +500,7 @@ let G={
   },
   bossAtk(){
     if(!this.boss)return;
+    if(this.activeBonus?.id==='shield'&&this.activeBonus.uses>0){this.activeBonus.uses--;if(!this.activeBonus.uses)this.activeBonus=null;this.fAdd(BX+BW/2,BY+BH/2,'BLOCKED','#6cf',45);return;}
     const holes=1+(Math.random()*2|0);
     const row=Array(COLS).fill('_g');
     const h=[];while(h.length<holes){const p=Math.random()*COLS|0;if(!h.includes(p)){h.push(p);row[p]=0;}}
@@ -504,11 +544,32 @@ let G={
     this.mana-=20;this.slow=15;this.btnFlash=.15;
     this.fAdd(BX+BW/2,BY+BH/2,'⏱ '+tr('slow'),'#ff6',50);
   },
+  offerBonus(extra=false){
+    if(this.state!=='play'&&this.state!=='bonus')return;
+    const pool=[...BONUS_DEFS].sort(()=>Math.random()-.5);
+    this.bonusOffer=pool.slice(0,extra?4:3);
+    if(this.aiOn){this.chooseBonus(this.pickBonus(this.bonusOffer));return;}
+    this.state='bonus';renderBonusOffer();
+  },
+  pickBonus(opts){
+    const priority=['shield','lightning','wild','freeze','mana','preview'];
+    return opts.slice().sort((a,b)=>priority.indexOf(a.id)-priority.indexOf(b.id))[0].id;
+  },
+  chooseBonus(id){
+    const d=BONUS_DEFS.find(v=>v.id===id);if(!d)return;
+    if(d.id==='mana')this.mana=Math.min(this.maxMana,this.mana+35);
+    else if(d.id==='freeze')this.slow=8;
+    else if(d.id==='preview')this.preview=3;
+    else if(d.id==='wild')this.activeBonus={id:'wild',uses:2};
+    else this.activeBonus={id:d.id,uses:1};
+    this.fAdd(BX+BW/2,BY+BH/2,d.icon+' '+(currentLang==='ru'?d.ru[0]:d.en[0]),'#ffe066',55);
+    this.bonusOffer=null;this.state='play';closeBonusOffer();
+  },
   snapSave(){
     if(this.state!=='play'||!this.pc)return;
     this.snap.push({
       b:this.board.map(r=>[...r]),t:this.pc.t,x:this.pc.x,y:this.pc.y,r:this.pc.r,
-      nx:this.next,bag:[...this.bag],bi:this.bi,
+      nx:this.next,nq:[...this.nextQ],bag:[...this.bag],bi:this.bi,
       sc:this.score,lv:this.level,xp:this.xp,xn:this.xpN,
       mn:this.mana,mm:this.maxMana,ln:this.lines,lb:this.linesB,
       bt:this.bossThr,dr:this.dropMs,sl:this.slow,
@@ -518,7 +579,7 @@ let G={
   snapRest(s){
     this.board=s.b.map(r=>[...r]);
     this.pc={t:s.t,x:s.x,y:s.y,r:s.r,s:shape(s.t,s.r)};this.gh=this.gy();
-    this.next=s.nx;this.bag=[...s.bag];this.bi=s.bi;
+    this.nextQ=s.nq?[...s.nq]:[s.nx];this.next=this.nextQ[0];this.bag=[...s.bag];this.bi=s.bi;
     this.score=s.sc;this.level=s.lv;this.xp=s.xp;this.xpN=s.xn;
     this.mana=s.mn;this.maxMana=s.mm;
     this.lines=s.ln;this.linesB=s.lb;this.bossThr=s.bt;
@@ -588,12 +649,19 @@ let G={
     this.aiTarget=null;this.aiTimer=0;
   },
   setSpeed(value){
-    this.sliderV=Math.max(1,Math.min(10,Math.round(value)));
+    this.sliderV=Math.max(1,Math.min(16,Math.round(value)));
     this.baseMs=1600-this.sliderV*150;
-    this.dropMs=Math.max(80,this.baseMs-(this.level-1)*40);
+    this.dropMs=Math.max(35,this.baseMs-(this.level-1)*40);
   },
   aiStepInterval(){
-    return .34-this.sliderV*.03;
+    return Math.max(.06,.38-this.sliderV*.02);
+  },
+  aiUseSkills(){
+    if(!this.aiOn||this.state!=='play'||!this.pc)return;
+    const filled=this.board.flat().filter(Boolean).length;
+    if(this.boss&&this.mana>=45&&this.board.some(r=>r.some(Boolean)&&!r.every(Boolean))&&Math.random()<.12){this.skillClr();return;}
+    if(this.boss&&this.mana>=35&&filled>95&&Math.random()<.18){this.skillBomb();return;}
+    if(this.boss&&this.mana>=20&&this.slow<=0&&this.boss.timer<18){this.skillSlow();return;}
   },
 
   procDas(dt){
@@ -611,12 +679,13 @@ let G={
 
   update(dt){
     if(this.state==='over')return;
-    if(this.state==='paused')return;
+    if(this.state==='paused'||this.state==='bonus')return;
     if(this.state==='rewind'){this.updRw(dt);return;}
     this.procDas(dt);
 
     // AI control
     if(this.aiOn&&this.pc&&this.state==='play'){
+      this.aiUseSkills();
       if(!this.aiTarget){this.aiTarget=this.aiFind();this.aiTimer=0;}
       if(this.aiTarget){
         this.aiTimer+=dt;
@@ -653,6 +722,7 @@ let G={
       if(this.boss.gT<=0){this.bossAtk();this.boss.gT=4-Math.min(2,this.level*0.15);}
       if(this.boss.timer<=0){this.boss=null;this.fAdd(BX+BW/2,BY+BH/2,tr('bossRetreated'),'#aaa',55);}
     }
+    if(this.contract){this.contract.time-=dt;if(this.contract.time<=0){this.contract=null;this.contractLines=0;}}
     this.floats=this.floats.filter(f=>{f.age+=dt;f.y-=30*dt;return f.age<f.life/60;});
   },
   updRw(dt){
@@ -675,6 +745,7 @@ let G={
     ctx.fillStyle='#0a0e27';ctx.fillRect(0,0,W,H);
     this.drawB();this.drawSide();this.drawBtns();this.drawCtrl();this.drawBoss();
     if(this.state==='rewind')this.drawRw();
+    if(this.state==='bonus')this.drawBonusPause();
     if(this.state==='paused')this.drawPaused();
     if(this.state==='over')this.drawOver();
     this.drawF();
@@ -743,6 +814,9 @@ let G={
       for(let r=s.length;r--;)for(let c=s[r].length;c--;)
         if(s[r][c]){ctx.fillStyle=COL[this.next][0];rr(ox+c*14,oy+r*14,12,12,3);ctx.fill();}
     }
+    if(this.preview>0){
+      ctx.fillStyle='#ffe066';ctx.font='bold 8px monospace';ctx.fillText('F '+this.nextQ.join('  '),px+8,py+78);
+    }
     box(px,py+95,140,44,tr('score'));
     ctx.fillStyle='#fff';ctx.font='bold 18px monospace';ctx.fillText(this.score.toLocaleString(),px+10,py+126);
     box(px,py+148,140,44,tr('level'));
@@ -753,33 +827,36 @@ let G={
     ctx.fillStyle='#161d3d';ctx.fillRect(px+8,py+218,124,12);
     ctx.fillStyle='#fd0';ctx.fillRect(px+8,py+218,124*Math.min(xr,1),12);
     ctx.fillStyle='#fff';ctx.font='8px monospace';ctx.fillText(this.xp+'/'+this.xpN,px+12,py+227);
-    box(px,py+234,140,26,tr('mana'));
-    const mr=this.mana/this.maxMana;
-    ctx.fillStyle='#161d3d';ctx.fillRect(px+8,py+252,124,12);
-    const mg=ctx.createLinearGradient(px+8,0,px+132,0);
-    mg.addColorStop(0,'#63c');mg.addColorStop(1,'#a6f');
-    ctx.fillStyle=mg;ctx.fillRect(px+8,py+252,124*Math.min(mr,1),12);
-    ctx.fillStyle='#fff';ctx.font='9px monospace';ctx.fillText(Math.floor(this.mana)+'/'+this.maxMana,px+12,py+261);
     ctx.fillStyle='#446688';ctx.font='10px monospace';
-    ctx.fillText(tr('controls1'),px,py+300);
-    ctx.fillText(tr('controls2'),px,py+314);
-    ctx.fillText(tr('controls3'),px,py+328);
+    ctx.fillText('← → ↓ ↑  SPACE',px,py+270);
+    ctx.fillText('A: '+(this.aiOn?'AI ON':'AI OFF'),px,py+284);
+    ctx.fillStyle='#9fb5ef';ctx.font='bold 10px monospace';
+    ctx.fillText((currentLang==='ru'?'СЕРИЯ':'STREAK')+': '+this.streak,px,py+312);
+    ctx.fillStyle='#7788bb';ctx.font='9px monospace';ctx.fillText(tr('overload'),px,py+330);
+    ctx.fillStyle='#1a204a';ctx.fillRect(px,py+338,140,8);
+    ctx.fillStyle=this.overload>=70?'#ff8c5a':'#6cf';ctx.fillRect(px,py+338,140*this.overload/100,8);
+    return;
+    if(this.contract){ctx.fillStyle='#ffca66';ctx.fillText(tr('contract')+': '+this.contractLines+'/'+this.contract.need,px,py+364);}
+    if(this.activeBonus){ctx.fillStyle='#8df';ctx.fillText('✦ '+this.activeBonus.id+' ×'+this.activeBonus.uses,px,py+378);}
+    if(!this.boss){ctx.fillStyle='#7788bb';ctx.font='9px monospace';ctx.fillText((currentLang==='ru'?'БОСС через ':'BOSS in ')+Math.max(0,this.bossThr-this.linesB)+' lines',px,py+392);}
   },
   drawBtns(){
+    return;
     const n=4,bw=(BW-GAP*(n-1))/n;
-    const lb=['⟲RW','💣BM','━CL','⏱SL'],ks=['Z','X','C','V'],ct=[60,35,45,20],clr=['#6cf','#f64','#6f8','#ff6'];
+    const lb=currentLang==='ru'?['ВРЕМЯ','БОМБА','ОЧИСТКА','МЕДЛЕННО']:['TIME','BOMB','CLEAR','SLOW'],ks=['Z','X','C','V'],ct=[60,35,45,20],clr=['#59bfff','#ff756d','#62e6a2','#ffd45c'];
     for(let i=0;i<n;i++){
       const x=BX+i*(bw+GAP),y=BY2;
       const ok=this.mana>=ct[i]&&this.state==='play'&&(i!==0||this.snap.length>=4);
-      ctx.globalAlpha=ok?1:.35;
-      ctx.fillStyle=ok?clr[i]:'#222242';rr(x,y,bw,BH2,4);ctx.fill();
-      ctx.strokeStyle=ok?clr[i]:'#333358';ctx.lineWidth=1;rr(x,y,bw,BH2,4);ctx.stroke();
-      ctx.fillStyle=ok?'#fff':'#666';ctx.font='bold 12px monospace';
+      ctx.globalAlpha=ok?1:.72;
+      ctx.fillStyle=ok?'#172445':'#141a31';rr(x,y,bw,BH2,6);ctx.fill();
+      ctx.fillStyle=clr[i];rr(x,y,bw,4,4);ctx.fill();
+      ctx.strokeStyle=ok?clr[i]:'#526080';ctx.lineWidth=1.5;rr(x,y,bw,BH2,6);ctx.stroke();
+      ctx.fillStyle=ok?'#ffffff':'#9ba5bf';ctx.font='bold 10px monospace';
       ctx.textAlign='center';ctx.fillText(lb[i],x+bw/2,y+19);
-      ctx.fillStyle=ok?'#99aadd':'#555';ctx.font='9px monospace';
+      ctx.fillStyle=ok?'#d6e1ff':'#8b96b2';ctx.font='bold 10px monospace';
       ctx.fillText(ks[i],x+bw/2,y+33);
-      ctx.fillStyle=ok?'#fd0':'#550';ctx.font='bold 9px monospace';
-      ctx.fillText(ct[i]+'MP',x+bw/2,y+44);
+      ctx.fillStyle=ok?'#ffe477':'#a18e46';ctx.font='bold 9px monospace';
+      ctx.fillText(ct[i]+' MP',x+bw/2,y+44);
       ctx.textAlign='left';ctx.globalAlpha=1;
     }
     if(this.btnFlash>0){
@@ -802,9 +879,9 @@ let G={
     const tx=x+82,tw=w-94,ty=y+23,th=5;
     ctx.fillStyle='#9aabd8';ctx.font='bold 8px monospace';ctx.textAlign='left';
     ctx.fillText(tr('speed'),tx,y+11);
-    ctx.fillStyle='#fff';ctx.textAlign='right';ctx.fillText(this.sliderV+'/10',x+w-9,y+11);
+    ctx.fillStyle='#fff';ctx.textAlign='right';ctx.fillText(this.sliderV+'/16',x+w-9,y+11);
     ctx.fillStyle='#1a204a';rr(tx,ty,tw,th,2);ctx.fill();
-    const frac=(this.sliderV-1)/9;
+    const frac=(this.sliderV-1)/15;
     ctx.fillStyle='#6cf';rr(tx,ty,tw*frac,th,2);ctx.fill();
     const hx=tx+tw*frac;
     ctx.fillStyle='#8df';ctx.beginPath();ctx.arc(hx,ty+th/2,6,0,Math.PI*2);ctx.fill();
@@ -827,6 +904,12 @@ let G={
     ctx.fillStyle=`rgba(40,80,255,${.22*this.revP})`;ctx.fillRect(BX,BY,BW,BH);
     ctx.fillStyle='#6cf';ctx.font='bold 22px monospace';
     ctx.textAlign='center';ctx.fillText('⟲ '+tr('rewind'),BX+BW/2,BY+BH/2);ctx.textAlign='left';
+  },
+  drawBonusPause(){
+    ctx.fillStyle='rgba(0,0,0,.48)';ctx.fillRect(BX,BY,BW,BH);
+    ctx.fillStyle='#ffe066';ctx.font='bold 18px monospace';ctx.textAlign='center';
+    ctx.fillText(currentLang==='ru'?'ВЫБЕРИ БОНУС':'CHOOSE A BONUS',BX+BW/2,BY+BH/2);
+    ctx.textAlign='left';
   },
   drawPaused(){
     ctx.fillStyle='rgba(0,0,0,.68)';ctx.fillRect(BX,BY,BW,BH);
@@ -937,11 +1020,11 @@ let G={
   click(e){
     if(this.state==='over'){this.restart();return;}
     const p=this.getPos(e),sx=p.x,sy=p.y;
-    // skills
+    // legacy skill area intentionally inactive
     const bw=(BW-GAP*3)/4;
     for(let i=0;i<4;i++){
       const x=BX+i*(bw+GAP);
-      if(sx>=x&&sx<=x+bw&&sy>=BY2&&sy<=BY2+BH2){
+      if(false&&sx>=x&&sx<=x+bw&&sy>=BY2&&sy<=BY2+BH2){
         if(i===0)this.skillRw();if(i===1)this.skillBomb();
         if(i===2)this.skillClr();if(i===3)this.skillSlow();
         return;
@@ -951,7 +1034,7 @@ let G={
     if(sx>=BX&&sx<=BX+BW&&sy>=CTY&&sy<=CTY+CTH){
       const tx=BX+82,tw=BW-94;
       if(sx>=tx-8&&sx<=tx+tw+8){ // slider
-        this.setSpeed(1+(sx-tx)/tw*9);
+        this.setSpeed(1+(sx-tx)/tw*15);
         this.sldDrag=1;
       }else if(sx<=BX+74){ // AI button
         this.toggleAI();
@@ -962,7 +1045,7 @@ let G={
     if(!this.sldDrag)return;
     const p=this.getPos(e),sx=p.x;
     const tx=BX+82,tw=BW-94;
-    this.setSpeed(1+(sx-tx)/tw*9);
+    this.setSpeed(1+(sx-tx)/tw*15);
   },
   loop(ts){
     const dt=this._lt?(ts-this._lt)/1e3:.016;
@@ -983,9 +1066,32 @@ function closeAchievements(){
   if(modalResume&&G.state==='paused'){G.state='play';Platform.gameplayStart();G._lt=performance.now();}
   modalResume=false;c.focus();
 }
+function renderBonusOffer(){
+  const modal=document.getElementById('bonusModal');if(!modal||!G.bonusOffer)return;
+  document.getElementById('bonusTitle').textContent=tr('bonusTitle');
+  document.getElementById('bonusSubtitle').textContent=tr('bonusSubtitle');
+  const guide=document.getElementById('bonusGuide');
+  let guideSeen=false;try{guideSeen=localStorage.getItem('tetrisRpgBonusGuideSeen')==='1'}catch{}
+  guide.textContent=currentLang==='ru'?'Выберите карточку: описание подсказывает, когда сработает эффект. Бонусы особенно полезны против босса.':tr('bonusGuide');
+  guide.classList.toggle('show',!guideSeen&&!G.aiOn);
+  document.getElementById('bonusReroll').textContent='🎬 '+tr('bonusReroll');
+  document.getElementById('bonusOptions').innerHTML=G.bonusOffer.map(d=>{
+    const copy=currentLang==='ru'?d.ru:d.en;
+    return `<button class="bonus-option" data-bonus="${d.id}"><b>${d.icon} ${copy[0]}</b><span>${copy[1]}</span></button>`;
+  }).join('');
+  modal.classList.add('open');
+}
+function closeBonusOffer(){document.getElementById('bonusModal')?.classList.remove('open');c.focus();}
 document.getElementById('langBtn').addEventListener('click',()=>setLanguage(currentLang==='ru'?'en':'ru'));
-document.getElementById('rewardBtn').addEventListener('click',()=>Platform.rewardMana());
-document.getElementById('achBtn').addEventListener('click',openAchievements);
+document.getElementById('rewardBtn')?.addEventListener('click',()=>{if(G.state==='play')G.offerBonus()});
+document.getElementById('bonusOptions').addEventListener('click',e=>{
+  const b=e.target.closest('[data-bonus]');if(b&&G.state==='bonus'){try{localStorage.setItem('tetrisRpgBonusGuideSeen','1')}catch{}G.chooseBonus(b.dataset.bonus);}
+});
+document.getElementById('bonusReroll').addEventListener('click',()=>{
+  if(G.state!=='bonus')return;
+  if(!G.bonusRerolls){G.bonusRerolls=1;G.offerBonus(true);}
+});
+document.getElementById('achBtn')?.addEventListener('click',openAchievements);
 document.getElementById('achClose').addEventListener('click',closeAchievements);
 document.getElementById('achModal').addEventListener('click',e=>{if(e.target.id==='achModal')closeAchievements()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('achModal').classList.contains('open')){e.stopImmediatePropagation();closeAchievements()}},true);
